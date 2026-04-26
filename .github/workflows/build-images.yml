@@ -23,6 +23,8 @@ jobs:
         integration:
           - id: gong
             dockerfile: integrations/gong/Dockerfile
+          - id: generic-npx
+            dockerfile: integrations/generic-npx/Dockerfile
 
     steps:
       - name: Checkout
