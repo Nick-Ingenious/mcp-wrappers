@@ -6,7 +6,7 @@ Pre-built container images for MCP servers that Stashup deploys on customers' be
 
 | Integration | Image | Source MCP |
 |---|---|---|
-| Gong | `ghcr.io/nick-ingenious/mcp-gong:latest` | [`kenazk/gong-mcp`](https://github.com/kenazk/gong-mcp) |
+| Gong | `docker.io/<dockerhub-user>/mcp-gong:latest` | [`kenazk/gong-mcp`](https://github.com/kenazk/gong-mcp) |
 
 ## How it works
 
@@ -18,12 +18,27 @@ Each integration has its own `Dockerfile` under `integrations/<id>/`. Every Dock
 
 When Stashup creates a Railway service for a customer's Gong connection, it points Railway at the published image — Railway pulls and runs it in ~30 seconds. No source clone, no `npm install`, no per-customer build delay.
 
+Images are published to **Docker Hub** (free, public-by-default — anyone can pull, no GitHub or registry authentication needed).
+
 ## Adding a new integration
 
 1. Create `integrations/<id>/Dockerfile` following the Gong example
 2. Add an entry to the matrix in `.github/workflows/build-images.yml`
 3. Open a PR. CI builds + publishes the image automatically on merge to `main`
 4. Add a matching preset in Stashup's `lib/deployPresets.js` referencing the new image
+
+No visibility flips, no GHCR setup — Docker Hub repos are public by default on free accounts.
+
+## CI setup (one-time)
+
+Two repository secrets need to be set in this repo's **Settings → Secrets and variables → Actions**:
+
+| Secret | Value |
+|---|---|
+| `DOCKERHUB_USERNAME` | Your Docker Hub username |
+| `DOCKERHUB_TOKEN` | An access token from Docker Hub (Account Settings → Security → New Access Token, with Read/Write scope) |
+
+Once set, every push to `main` that touches `integrations/` or `shared-wrapper/` rebuilds and re-publishes the affected images.
 
 ## Image versioning
 
