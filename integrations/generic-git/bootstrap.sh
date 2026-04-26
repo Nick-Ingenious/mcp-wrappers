@@ -26,6 +26,12 @@ else
     *) REPO="https://github.com/$REPO.git" ;;
   esac
 
+  # Clean any leftover state from a previous container restart so the clone
+  # always lands in a fresh empty directory. Railway preserves the container
+  # filesystem across restarts; without this, the second boot fails with
+  # "destination path '/mcp' already exists".
+  rm -rf /mcp
+
   echo "[bootstrap] cloning $REPO @ $REF into /mcp"
   if ! git clone --depth 1 -b "$REF" "$REPO" /mcp; then
     echo "[bootstrap] ✗ clone failed — check GIT_REPO_URL and GIT_REF"
