@@ -1,0 +1,59 @@
+name: Build & publish MCP wrapper images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'integrations/**'
+      - 'shared-wrapper/**'
+      - '.github/workflows/build-images.yml'
+  workflow_dispatch: {}  # allow manual rebuilds
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # required to push to ghcr.io
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Add a new entry per integration directory under integrations/.
+        # Each entry: id (lowercase, used in image name) + the Dockerfile path.
+        integration:
+          - id: gong
+            dockerfile: integrations/gong/Dockerfile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute image name
+        id: img
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=ghcr.io/${OWNER_LC}/mcp-${{ matrix.integration.id }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .                          # repo root so Dockerfiles can COPY shared-wrapper
+          file: ${{ matrix.integration.dockerfile }}
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ steps.img.outputs.name }}:latest
+            ${{ steps.img.outputs.name }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.integration.id }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.integration.id }}
