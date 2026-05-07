@@ -28,18 +28,19 @@ WORKDIR /app
 
 # git: clone user repos at runtime
 # bash: some build scripts assume it
-# python3 + py3-pip + py3-pipx: runtime + package install for Python MCPs
+# python3 + py3-pip: runtime + package install for Python MCPs. pip handles the
+#   install-from-source path directly via `pip install --break-system-packages
+#   -e .`; pipx isn't needed (and `py3-pipx` doesn't exist as a package on the
+#   Alpine version that ships with node:20-alpine — caused the original build
+#   to fail and left :latest stuck on the pre-Python image).
 # build-base + python3-dev + libffi-dev + openssl-dev: needed when Python
 #   deps without manylinux wheels (grpcio, cryptography) compile from source
 #   on Alpine's musl libc
 RUN apk add --no-cache \
       git bash \
-      python3 py3-pip py3-pipx \
+      python3 py3-pip \
       build-base python3-dev libffi-dev openssl-dev \
     && ln -sf /usr/bin/python3 /usr/local/bin/python
-
-ENV PIPX_HOME=/opt/pipx \
-    PIPX_BIN_DIR=/usr/local/bin
 
 # Shared wrapper code
 COPY shared-wrapper/package.json ./
